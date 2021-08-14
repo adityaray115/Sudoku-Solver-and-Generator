@@ -1,111 +1,25 @@
 from tkinter import *
-from tkinter import messagebox
+from tkinter import messagebox,Toplevel, Button, Tk, Menu  
 import numpy as np
 import random
 from numpy.random.mtrand import shuffle
 import mysql.connector
 
 root=Tk()
-root.title('SUDOKU SOLVER')
-'''rootwidth=1150
-rootheight=690
-root.minsize(rootwidth,rootheight)
-root.maxsize(rootwidth,rootheight)'''
-root.geometry('1150x690')
+root.title('SUDOKU')
+root.geometry('460x460')
 root.resizable(width=False,height=False)
 counter=1
 
 #variables
 counter=1
-name=''
 d=''
-tot_time='0:0:0'
+diff=0
 fillgridcheck=0
 autosolve=0
 endgame=0
 numberlist=list(range(1,10))
 numlist=['1','2','3','4','5','6','7','8','9','']
-
-#--------------------------------TIMER-------------------------
-hour = minute = second = 0
-h = m = s = 0
-def counter_label(timer):
-    #global timer
-    hour = minute = second = 0
-    h = m = s = 0
-    def count():
-        global s,m,h
-        global second,minute,hour
-        global fillgridcheck
-        global autosolve
-        global endgame
-        global tot_time
-        second = second + 1
-        if second < 10:
-            s = 1
-        if minute < 10:
-            m = 1
-        if hour < 10:
-            h = 1
-        if second > 59:
-            minute = minute + 1
-            second = 0
-            if minute > 59:
-                hour = hour +1
-                second = 0
-                minute = 0
-                if hour > 23:
-                    fillgridcheck = 1
-                    messagebox.showinfo('Message','One day completed')
-        if fillgridcheck==1:
-            resetgame['state']=DISABLED
-            checkgame['state']=DISABLED
-            solvegame['state']=DISABLED
-            hour = minute = second = 0
-            fillgridcheck=0
-            if endgame==1:
-                endgame = 0
-                hour = minute = second = 0
-                return
-            if autosolve==1:
-                tot_time = 'AUTO SOLVE'
-                autosolve = 0
-            messagebox.showinfo('Message','Game completed.')
-            return
-        if(s==1 and m==1 and h==1):
-            timer.config(text = '0'+str(hour)+':'+'0'+str(minute)+':'+'0'+str(second))
-            tot_time = '0'+str(hour)+':'+'0'+str(minute)+':'+'0'+str(second)
-            h= m = s = 0
-        elif(s==0 and m==1 and h==1):
-            timer.config(text = '0'+str(hour)+':'+'0'+str(minute)+':'+str(second))
-            tot_time = '0'+str(hour)+':'+'0'+str(minute)+':'+str(second)
-            h = m = 0
-        elif(s==1 and m==0 and h==1):
-            timer.config(text = '0'+str(hour)+':'+str(minute)+':'+'0'+str(second))
-            tot_time = '0'+str(hour)+':'+str(minute)+':'+'0'+str(second)
-            h = s = 0
-        elif(s==0 and m==0 and h==1):
-            timer.config(text = '0'+str(hour)+':'+str(minute)+':'+str(second))
-            tot_time = '0'+str(hour)+':'+str(minute)+':'+str(second)
-            h = 0
-        elif(s==1 and m==1 and h==0):
-            timer.config(text = str(hour)+':'+'0'+str(minute)+':'+'0'+str(second))
-            tot_time = str(hour)+':'+'0'+str(minute)+':'+'0'+str(second)
-            m = s = 0
-        elif(s==0 and m==1 and h==0):
-            timer.config(text = str(hour)+':'+'0'+str(minute)+':'+str(second))
-            tot_time = str(hour)+':'+'0'+str(minute)+':'+str(second)
-            m =0
-        elif(s==1 and m==0 and h==0):
-            timer.config(text = str(hour)+':'+str(minute)+':'+'0'+str(second))
-            tot_time = str(hour)+':'+str(minute)+':'+'0'+str(second)
-            s = 0
-        else:
-            timer.config(text = str(hour)+':'+str(minute)+':'+str(second))
-            tot_time = str(hour)+':'+str(minute)+':'+str(second)
-        timer.after(1000,count)
-    count()
-#-------------------------------------------------------------------------------
 
 def valid(x,y,n):
     for i in range(0,9):
@@ -143,7 +57,7 @@ def check_fill():
 numberlist=list(range(1,10))
 
 def fillGrid():
-    #   global counter
+  global counter
   #Find next empty cell
   for i in range(0,81):
     row=i//9
@@ -206,81 +120,53 @@ def solveGrid():
   entry[row][col].delete(0,END)        
   entry[row][col].insert(0,str(''))
 
-def newg():
-    global timer
-    global counter
-    if entryname.get()=='' and diff.get()=='SELECT':
-        messagebox.showerror('Error','Enter name and select difficulty level.')
-    elif entryname.get()=='':
-        messagebox.showerror('Error','Name field should not be empty.')
-    elif diff.get()=='SELECT':
-        messagebox.showerror('Error','Difficulty level not selected.')
-    else:
-        global name 
-        name=entryname.get()
-        global fillgridcheck
-        fillgridcheck=0
-        resetgrid(entry)
-        newbuttonpressed()
-        fillGrid()
-        for row in range(9):
-            for col in range(9):
-                entry[row][col].configure(state='readonly')
-        count=0
-        if diff.get()=='EASY':count=40
-        elif diff.get()=='NORMAL':count=50
-        elif diff.get()=='HARD':count=60
-        counter=1
-        while count>0:
-            # Select a random cell that is not already empty
+def newg(diff):
+    global fillgridcheck
+    fillgridcheck=0
+    resetgrid()
+    fillGrid()
+    for row in range(9):
+        for col in range(9):
+            entry[row][col].configure(state='readonly')
+    count=0
+    if diff==1:count=40
+    elif diff==2:count=50
+    elif diff==3:count=60
+    counter=1
+    while count>0:
+        # Select a random cell that is not already empty
+        row = random.randint(0,8)
+        col = random.randint(0,8)
+        while entry[row][col].get()=='':
             row = random.randint(0,8)
             col = random.randint(0,8)
-            while entry[row][col].get()=='':
-                row = random.randint(0,8)
-                col = random.randint(0,8)
-            #Remember its cell value in case we need to put it back  
-            entry[row][col].configure(state='normal')
-            backup = entry[row][col].get()
-            entry[row][col].delete(0,END)
-            
-            #Take a full copy of the grid
-            gridcopy=[]
+        #Remember its cell value in case we need to put it back  
+        entry[row][col].configure(state='normal')
+        backup = entry[row][col].get()
+        entry[row][col].delete(0,END)
+        
+        #Take a full copy of the grid
+        gridcopy=[]
+        l=[]
+        for i in range(0,9):
             l=[]
-            for i in range(0,9):
-                l=[]
-                for j in range(0,9):
-                    l.append(entry[i][j].get())
-                gridcopy.append(l)
-            #Count the number of solutions that this grid has (using a backtracking approach implemented in the solveGrid() function)
-            counter=0
-            solveGrid()   
-            #If the number of solution is different from 1 then we need to cancel the change by putting the value we took away back in the grid
-            if counter!=1:
-                entry[row][col].delete(0,END)
-                entry[row][col].insert(0,str(backup))
-                #We could stop here, but we can also have another attempt with a different cell just to try to remove more numbers
-                count -= 1
-            for i in range(0,9):
-                for j in range(0,9):
-                    entry[i][j].delete(0,END)
-                    entry[i][j].insert(0,str(gridcopy[i][j]))
-        counter_label(timer)        
-
-def saveg():
-    global name
-    global tot_time
-    global d
-    d = diff.get()
-    sud=mysql.connector.connect(host='localhost',username='root',passwd='')
-    obj=sud.cursor()
-    obj.execute('create database if not exists sudoku')
-    obj.execute('use sudoku')
-    obj.execute('create table if not exists sudoku(NAME varchar(30),TIME varchar(30),DIFFICULTY varchar(20))')
-    sql='insert into sudoku values(%s,%s,%s);'
-    var=(name,tot_time,d)
-    obj.execute(sql,var)
-    obj.execute('commit;')
-    messagebox.showinfo('Saved','Your record has been saved.')
+            for j in range(0,9):
+                l.append(entry[i][j].get())
+            gridcopy.append(l)
+        #Count the number of solutions that this grid has (using a backtracking approach implemented in the solveGrid() function)
+        counter=0
+        solveGrid()
+        #If the number of solution is different from 1 then we need to cancel the change by putting the value we took away back in the grid
+        if counter!=1:
+            entry[row][col].delete(0,END)
+            entry[row][col].insert(0,str(backup))
+            #We could stop here, but we can also have another attempt with a different cell just to try to remove more numbers
+            count -= 1
+        for i in range(0,9):
+            for j in range(0,9):
+                entry[i][j].delete(0,END)
+                entry[i][j].insert(0,str(gridcopy[i][j]))
+    # counter_label(timer)        
 
 def solveg():
     global fillgridcheck,autosolve
@@ -312,7 +198,6 @@ def checkg():
     fillgridcheck=1
 
 def resetg():
-    messagebox.showwarning('Warning','Timer will not stop.')
     ans=messagebox.askyesno('Confirm','Are you sure you want to reset?')
     if ans==1:
         # resetgrid(entry)
@@ -337,37 +222,18 @@ def exitg():
             endgame = 1
             exitbuttonpressed()
             resetgrid(entry)
-            disname.configure(text=entryname.get())
-            diffright2.configure(text='')
-            timer.config(text='')
+            # disname.configure(text=entryname.get())
+            # diffright2.configure(text='')
+            # timer.config(text='')
             username['state']=DISABLED
             time['state']=DISABLED
             diffright1['state']=DISABLED
     else:
         pass
 
-def newbuttonpressed():
-    messagebox.showinfo('Game','Lets Play.....'+entryname.get())
-    disname.configure(text=entryname.get())
-    diffright2.configure(text=diff.get())
-    entryname.delete(0,END)
-    entryname['state']=DISABLED
-    diffselect['state']=DISABLED
-    namelabel['state']=DISABLED
-    difficulty['state']=DISABLED
-    newgame['state']=DISABLED
-    checkgame['state']=NORMAL
-    solvegame['state']=NORMAL
-    savegame['state']=NORMAL
-    resetgame['state']=NORMAL
-    exitgame['state']=NORMAL
-    username['state']=NORMAL
-    time['state']=NORMAL
-    diffright1['state']=NORMAL
 
 def exitbuttonpressed():
     entryname['state']=NORMAL
-    entryname.configure(text='')
     diffselect['state']=NORMAL
     diff.set('SELECT')
     namelabel['state']=NORMAL
@@ -379,72 +245,96 @@ def exitbuttonpressed():
     resetgame['state']=DISABLED
     exitgame['state']=DISABLED
 
-def resetgrid(entry):
+def resetgrid():
     for i in range(9):
         for j in range(9):
             entry[i][j].configure(state='normal')
             entry[i][j].delete(0,END)
 
 #Main Frame
-mainframe=Frame(root,bg='violet')
+mainframe=Frame(root,bg='black')
 mainframe.pack(expand=True,fill='both')
 
-#Title of the Application
-titleframe=Frame(mainframe,bg='pink')
-title=Label(titleframe,text='SUDOKU',font=('arial black',70,'bold','underline'),fg='purple',bg='pink')
-title.pack()
-titleframe.pack(anchor=N,fill='x')
 
-#Interaction Area for User
-leftframe=Frame(mainframe,bg='light blue',width=300)
-namelabel=Label(leftframe,text='Enter Name:',bg='light blue',font=('Arial',15))
-namelabel.place(x=5,y=20)
-entryname=Entry(leftframe,width=15,font=('Arial',15),fg='red')
-entryname.place(x=125,y=20)
-difficulty=Label(leftframe,text='Difficulty:',bg='light blue',font=('Arial',15))
-difficulty.place(x=5,y=60)
-newgame=Button(leftframe,text='NEW GAME',bg='light green',font=('Arial',15,'bold'),command=newg,bd=5)
-newgame.place(x=90,y=270)
-checkgame=Button(leftframe,text='CHECK',bg='light green',font=('Arial',15,'bold'),command=checkg,bd=5)
-checkgame.place(x=170,y=330)
-solvegame=Button(leftframe,text='SOLVE',bg='light green',font=('Arial',15,'bold'),command=solveg,bd=5)
-solvegame.place(x=50,y=330)
-savegame=Button(leftframe,text='SAVE',bg='light green',font=('Arial',15,'bold'),command=saveg,bd=5)
-savegame.place(x=50,y=390)
-resetgame=Button(leftframe,text='RESET',bg='light green',font=('Arial',15,'bold'),command=resetg,bd=5)
-resetgame.place(x=170,y=390)
-exitgame=Button(leftframe,text='END GAME',bg='light green',font=('Arial',15,'bold'),command=exitg,bd=5)
-exitgame.place(x=90,y=450)
-diff=StringVar()
-diff.set('SELECT')
-diffselect=OptionMenu(leftframe,diff,'EASY','NORMAL','HARD')
-diffselect.config(font=('Arial',10,'italic'),fg='red')
-diffselect.place(x=100,y=60)
-exitbuttonpressed()
-leftframe.pack(side=LEFT,fill='y')
+menubar = Menu(root,background="black")
+action = Menu(menubar,tearoff=False);
+
+diff = Menu(menubar,tearoff=False);
+diff.add_command(label="Easy",COMMAND=newg(1));
+diff.add_command(label="Medium",COMMAND=newg(2));
+diff.add_command(label="Hard",COMMAND=newg(3));
+action.add_cascade(menu = diff, label = "New Game")
+
+action.add_command(label="Reset")
+action.add_command(label="Solve")
+action.add_command(label="Check")
+
+action.add_separator()
+action.add_command(label="Exit", command=root.quit)
+menubar.add_cascade(menu = action, label = "Action")
+
+
+
+root.config(menu=menubar)
+
+#Title of the Application
+# titleframe=Frame(mainframe,bg='pink')
+# title=Label(titleframe,text='SUDOKU',font=('arial black',70,'bold','underline'),fg='purple',bg='pink')
+# title.pack()
+# titleframe.pack(anchor=N,fill='x')
+
+#Menu Area for User
+
+# leftframe=Frame(mainframe,bg='black',width=300)
+# namelabel=Label(leftframe,text='Enter Name:',bg='light blue',font=('Arial',15))
+# namelabel.place(x=5,y=20)
+# entryname=Entry(leftframe,width=15,font=('Arial',15),fg='red')
+# entryname.place(x=125,y=20)
+# difficulty=Label(leftframe,text='Difficulty:',bg='light blue',font=('Arial',15))
+# difficulty.place(x=5,y=60)
+# newgame=Button(leftframe,text='NEW GAME',bg='light green',font=('Arial',15,'bold'),command=newg,bd=5)
+# newgame.place(x=90,y=270)
+# checkgame=Button(leftframe,text='CHECK',bg='light green',font=('Arial',15,'bold'),command=checkg,bd=5)
+# checkgame.place(x=170,y=330)
+# solvegame=Button(leftframe,text='SOLVE',bg='light green',font=('Arial',15,'bold'),command=solveg,bd=5)
+# solvegame.place(x=50,y=330)
+# savegame=Button(leftframe,text='SAVE',bg='light green',font=('Arial',15,'bold'),command=saveg,bd=5)
+# savegame.place(x=50,y=390)
+# resetgame=Button(leftframe,text='RESET',bg='light green',font=('Arial',15,'bold'),command=resetg,bd=5)
+# resetgame.place(x=170,y=390)
+# exitgame=Button(leftframe,text='END GAME',bg='light green',font=('Arial',15,'bold'),command=exitg,bd=5)
+# exitgame.place(x=90,y=450)
+# diff=StringVar()
+# diff.set('SELECT')
+# diffselect=OptionMenu(leftframe,diff,'EASY','NORMAL','HARD')
+# diffselect.config(font=('Arial',10,'italic'),fg='red')
+# diffselect.place(x=100,y=60)
+# exitbuttonpressed()
+# leftframe.pack(side=LEFT,fill='y')
 
 #Details display
-rightframe=Frame(mainframe,bg='light blue',width=300)
-username=Label(rightframe,text='Username:',bg='light blue',font=('Arial',15))
-username.place(x=5,y=20)
-disname=Label(rightframe,bg='light blue',font=('Arial',15),fg='red')
-disname.place(x=105,y=20)
-diffright1=Label(rightframe,text='Difficulty:',bg='light blue',font=('Arial',15))
-diffright1.place(x=5,y=60)
-diffright2=Label(rightframe,bg='light blue',font=('Arial',15),fg='red')
-diffright2.place(x=90,y=60)
-time=Label(rightframe,text='Time:',bg='light blue',font=('Arial',15))
-time.place(x=5,y=100)
-timer=Label(rightframe,bg='light blue',font=('Arial',15),fg='red')
-timer.place(x=70,y=100)
-username['state']=DISABLED
-time['state']=DISABLED
-diffright1['state']=DISABLED
-rightframe.pack(side=RIGHT,fill='y')
+# diff=1
+# rightframe=Frame(mainframe,bg='black',width=300)
+# username=Label(rightframe,text='Username:',bg='light blue',font=('Arial',15))
+# username.place(x=5,y=20)
+# disname=Label(rightframe,bg='light blue',font=('Arial',15),fg='red')
+# disname.place(x=105,y=20)
+# diffright1=Label(rightframe,text='Difficulty:',bg='light blue',font=('Arial',15))
+# diffright1.place(x=5,y=60)
+# diffright2=Label(rightframe,bg='light blue',font=('Arial',15),fg='red')
+# diffright2.place(x=90,y=60)
+# time=Label(rightframe,text='Time:',bg='light blue',font=('Arial',15))
+# time.place(x=5,y=100)
+# timer=Label(rightframe,bg='light blue',font=('Arial',15),fg='red')
+# timer.place(x=70,y=100)
+# username['state']=DISABLED
+# time['state']=DISABLED
+# diffright1['state']=DISABLED
+# rightframe.pack(side=RIGHT,fill='y')
 
 #Play Area
 canvas1 = Canvas(mainframe, width = 455, height = 455, bd=1)
-canvas1.pack(pady=44)
+canvas1.pack(pady=0)
 canvas1.create_line(155, 0,155,500)
 canvas1.create_line(305, 0,305,500)
 canvas1.create_line(5, 155,500,155)
